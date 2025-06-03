@@ -55,7 +55,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div id="resume-preview" className="bg-white shadow-lg rounded-lg overflow-hidden">
       {renderTemplate()}
     </div>
   );

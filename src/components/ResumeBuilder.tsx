@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Star, CheckCircle, AlertCircle, Lightbulb, Download, Eye } from 'lucide-react';
+import { FileText, Star, CheckCircle, AlertCircle, Lightbulb, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import TemplateSelector from './TemplateSelector';
 import ResumePreview from './ResumePreview';
 import ATSChecker from './ATSChecker';
 import ContentSuggestions from './ContentSuggestions';
+import ExportDropdown from './ExportDropdown';
 
 interface ResumeData {
   personalInfo: {
@@ -232,12 +232,11 @@ const ResumeBuilder = () => {
               <FileText className="w-4 h-4 mr-2" />
               Back to Editor
             </Button>
-            <Button>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
+            <ExportDropdown resumeData={resumeData} />
           </div>
-          <ResumePreview data={resumeData} />
+          <div id="resume-preview">
+            <ResumePreview data={resumeData} />
+          </div>
         </div>
       </div>
     );
@@ -258,10 +257,7 @@ const ResumeBuilder = () => {
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
               </Button>
-              <Button>
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
+              <ExportDropdown resumeData={resumeData} />
             </div>
           </div>
           
