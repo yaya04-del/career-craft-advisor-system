@@ -10,6 +10,7 @@ import TemplateSelector from './TemplateSelector';
 import ResumePreview from './ResumePreview';
 import ATSChecker from './ATSChecker';
 import ContentSuggestions from './ContentSuggestions';
+import JobSuggestions from './JobSuggestions';
 import ExportDropdown from './ExportDropdown';
 import PersonalInfoForm from './forms/PersonalInfoForm';
 import SummaryForm from './forms/SummaryForm';
@@ -358,6 +359,7 @@ const ResumeBuilder = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             <ATSChecker data={resumeData} />
+            <JobSuggestions resumeData={resumeData} />
             <ContentSuggestions 
               industry={selectedIndustry}
               role={selectedRole}
