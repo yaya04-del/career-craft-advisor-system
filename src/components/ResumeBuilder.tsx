@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import ResumePreview from './ResumePreview';
 import ATSChecker from './ATSChecker';
 import ContentSuggestions from './ContentSuggestions';
 import JobSuggestions from './JobSuggestions';
+import FeedbackTracker from './FeedbackTracker';
 import ExportDropdown from './ExportDropdown';
 import PersonalInfoForm from './forms/PersonalInfoForm';
 import SummaryForm from './forms/SummaryForm';
@@ -74,6 +74,7 @@ const ResumeBuilder = () => {
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
+  const [feedbackPatterns, setFeedbackPatterns] = useState<any[]>([]);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -87,6 +88,15 @@ const ResumeBuilder = () => {
   useEffect(() => {
     localStorage.setItem('resumeBuilderData', JSON.stringify(resumeData));
   }, [resumeData]);
+
+  // Track changes to summary for feedback
+  useEffect(() => {
+    const lastApplied = (window as any).lastAppliedSuggestion;
+    if (lastApplied && lastApplied.type === 'summary' && lastApplied.content !== resumeData.summary) {
+      lastApplied.trackEdit(lastApplied.content, resumeData.summary);
+      delete (window as any).lastAppliedSuggestion;
+    }
+  }, [resumeData.summary]);
 
   const updatePersonalInfo = (field: keyof typeof resumeData.personalInfo, value: string) => {
     setResumeData(prev => ({
@@ -358,6 +368,7 @@ const ResumeBuilder = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <FeedbackTracker onPatternsUpdate={setFeedbackPatterns} />
             <ATSChecker data={resumeData} />
             <JobSuggestions resumeData={resumeData} />
             <ContentSuggestions 

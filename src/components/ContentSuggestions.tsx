@@ -1,10 +1,10 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, Sparkles, Copy, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useFeedbackImprovement } from '@/hooks/useFeedbackImprovement';
 
 interface ContentSuggestionsProps {
   industry: string;
@@ -17,6 +17,8 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   role, 
   onSuggestionApply 
 }) => {
+  const { improvements, trackEdit, generateImprovedPrompt } = useFeedbackImprovement();
+
   const suggestions = useMemo(() => {
     const baseSuggestions = {
       summaries: [
@@ -56,11 +58,41 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       }
     };
 
-    // Customize based on industry and role
-    const customSummaries = [];
-    const customSkills = baseSuggestions.skills[industry as keyof typeof baseSuggestions.skills] || baseSuggestions.skills.technology;
-    const customAchievements = baseSuggestions.achievements[role as keyof typeof baseSuggestions.achievements] || baseSuggestions.achievements.entry;
+    // Apply feedback improvements
+    let customSummaries = [...baseSuggestions.summaries];
+    let customAchievements = baseSuggestions.achievements[role as keyof typeof baseSuggestions.achievements] || baseSuggestions.achievements.entry;
 
+    // Improve suggestions based on learned patterns
+    if (improvements.includeMetrics) {
+      customSummaries = customSummaries.map(summary => {
+        if (!summary.match(/\d+/)) {
+          return summary.replace('proven expertise', 'proven expertise with 95% success rate');
+        }
+        return summary;
+      });
+    }
+
+    if (improvements.expandDetails) {
+      customSummaries = customSummaries.map(summary => {
+        if (summary.length < 150) {
+          return summary + " Experienced in stakeholder management, project delivery, and driving measurable business outcomes.";
+        }
+        return summary;
+      });
+    }
+
+    if (improvements.emphasizeLeadership) {
+      customAchievements = customAchievements.map(achievement => {
+        if (!achievement.toLowerCase().includes('led') && !achievement.toLowerCase().includes('managed')) {
+          return achievement.replace('Successfully', 'Successfully led initiatives that');
+        }
+        return achievement;
+      });
+    }
+
+    const customSkills = baseSuggestions.skills[industry as keyof typeof baseSuggestions.skills] || baseSuggestions.skills.technology;
+
+    // Customize based on industry and role
     if (industry && role) {
       if (industry === 'technology') {
         customSummaries.push(
@@ -76,14 +108,30 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     }
 
     return {
-      summaries: [...customSummaries, ...baseSuggestions.summaries],
+      summaries: customSummaries,
       skills: customSkills,
       achievements: customAchievements
     };
-  }, [industry, role]);
+  }, [industry, role, improvements]);
 
   const applySuggestion = (type: string, content: string) => {
     onSuggestionApply(type, content);
+    
+    // Set up tracking for when user edits the applied suggestion
+    setTimeout(() => {
+      const trackEditFunction = (originalContent: string, editedContent: string) => {
+        if (originalContent !== editedContent) {
+          trackEdit(originalContent, editedContent, type, { industry, role });
+        }
+      };
+      
+      // Store the tracking function for later use
+      (window as any).lastAppliedSuggestion = {
+        content,
+        type,
+        trackEdit: trackEditFunction
+      };
+    }, 100);
   };
 
   const copyToClipboard = (text: string) => {
@@ -100,6 +148,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5" />
           AI Suggestions
+          {Object.values(improvements).some(Boolean) && (
+            <Badge variant="secondary" className="text-xs">Learning</Badge>
+          )}
         </CardTitle>
         {(industry || role) && (
           <div className="flex gap-2">
@@ -114,6 +165,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
           <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-1">
             <Sparkles className="w-4 h-4" />
             Professional Summary
+            {improvements.expandDetails && (
+              <Badge variant="outline" className="text-xs ml-2">Enhanced</Badge>
+            )}
           </h4>
           <div className="space-y-3">
             {suggestions.summaries.slice(0, 2).map((summary, index) => (
@@ -161,7 +215,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
         {/* Achievement Suggestions */}
         <div>
-          <h4 className="font-medium text-gray-700 mb-3">Achievement Examples</h4>
+          <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+            Achievement Examples
+            {improvements.includeMetrics && (
+              <Badge variant="outline" className="text-xs">Metrics</Badge>
+            )}
+            {improvements.emphasizeLeadership && (
+              <Badge variant="outline" className="text-xs">Leadership</Badge>
+            )}
+          </h4>
           <div className="space-y-2">
             {suggestions.achievements.slice(0, 3).map((achievement, index) => (
               <div key={index} className="p-2 bg-blue-50 rounded text-sm">
@@ -188,6 +250,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
             <li>• Include specific numbers and metrics when possible</li>
             <li>• Tailor your resume for each job application</li>
             <li>• Keep descriptions concise but impactful</li>
+            {improvements.includeMetrics && (
+              <li className="text-blue-600">• AI noticed you prefer quantified achievements</li>
+            )}
           </ul>
         </div>
       </CardContent>
