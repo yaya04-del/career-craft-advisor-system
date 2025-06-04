@@ -1,8 +1,9 @@
+
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Lightbulb, Sparkles, Copy, Check } from 'lucide-react';
+import { Lightbulb, Sparkles, Copy, Check, Briefcase } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFeedbackImprovement } from '@/hooks/useFeedbackImprovement';
 
@@ -12,6 +13,40 @@ interface ContentSuggestionsProps {
   onSuggestionApply: (type: string, content: string) => void;
 }
 
+// Industry-specific data based on custom instructions
+const industryData = {
+  nursing: {
+    job_titles: ["Registered Nurse", "ICU Nurse", "Clinical Nurse", "Nurse Practitioner"],
+    skills: ["Patient Care", "IV Therapy", "Medication Administration", "Vital Signs Monitoring", "Electronic Health Records (EHR)", "Compassion", "BLS Certification"],
+    certifications: ["BLS", "CPR", "RN License", "BSN"],
+    sample_summary: "Compassionate and dedicated Registered Nurse with over 5 years of experience in patient care, skilled in clinical assessments, medication administration, and multidisciplinary collaboration to improve patient outcomes."
+  },
+  "civil engineering": {
+    job_titles: ["Site Engineer", "Structural Engineer", "Hydraulics Engineer", "Project Manager"],
+    skills: ["AutoCAD", "Project Planning", "Structural Analysis", "Cost Estimation", "Construction Supervision", "Surveying", "ECSA Registration"],
+    certifications: ["BEng Civil Engineering", "ECSA Certification"],
+    sample_summary: "Results-driven Civil Engineer with expertise in infrastructure design, project execution, and construction site management. Proven ability to coordinate with teams and meet project deadlines efficiently."
+  },
+  "software engineering": {
+    job_titles: ["Backend Developer", "Frontend Developer", "Full Stack Engineer", "DevOps Engineer"],
+    skills: ["Python", "JavaScript", "Django", "React", "Agile Methodologies", "Git", "CI/CD"],
+    certifications: ["AWS Certified Developer", "Scrum Master", "Google Cloud Engineer"],
+    sample_summary: "Innovative Software Engineer with experience in designing and developing scalable web applications. Strong background in backend systems, cloud services, and agile development environments."
+  },
+  finance: {
+    job_titles: ["Financial Analyst", "Accountant", "Risk Manager", "Auditor"],
+    skills: ["Budgeting", "Financial Modeling", "Forecasting", "GAAP", "Risk Analysis", "SAP", "Excel"],
+    certifications: ["CPA", "CFA", "MBA Finance"],
+    sample_summary: "Detail-oriented Financial Analyst with a strong foundation in budgeting, risk management, and data-driven financial planning. Adept at using financial software to generate reports and insights for strategic decision-making."
+  },
+  marketing: {
+    job_titles: ["Digital Marketing Specialist", "SEO Manager", "Brand Manager", "Content Strategist"],
+    skills: ["SEO", "Content Marketing", "Google Analytics", "PPC", "Email Campaigns", "Brand Positioning"],
+    certifications: ["Google Ads Certification", "HubSpot Content Marketing", "Meta Blueprint"],
+    sample_summary: "Creative and data-driven Marketing Professional with expertise in digital strategy, content marketing, and audience engagement. Proven ability to boost brand visibility and campaign ROI."
+  }
+};
+
 const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({ 
   industry, 
   role, 
@@ -20,6 +55,9 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
   const { improvements, trackEdit, generateImprovedPrompt } = useFeedbackImprovement();
 
   const suggestions = useMemo(() => {
+    // Get industry-specific data
+    const currentIndustryData = industryData[industry as keyof typeof industryData];
+    
     const baseSuggestions = {
       summaries: [
         "Results-driven professional with proven expertise in driving organizational success through strategic initiatives and collaborative leadership.",
@@ -58,11 +96,15 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       }
     };
 
-    // Apply feedback improvements
-    let customSummaries = [...baseSuggestions.summaries];
+    // Start with industry-specific content if available
+    let customSummaries = currentIndustryData ? [currentIndustryData.sample_summary] : [...baseSuggestions.summaries];
+    let customSkills = currentIndustryData ? currentIndustryData.skills : (baseSuggestions.skills[industry as keyof typeof baseSuggestions.skills] || baseSuggestions.skills.technology);
+    let customCertifications = currentIndustryData ? currentIndustryData.certifications : [];
+    let suggestedJobTitles = currentIndustryData ? currentIndustryData.job_titles : [];
+    
     let customAchievements = baseSuggestions.achievements[role as keyof typeof baseSuggestions.achievements] || baseSuggestions.achievements.entry;
 
-    // Improve suggestions based on learned patterns
+    // Apply feedback improvements
     if (improvements.includeMetrics) {
       customSummaries = customSummaries.map(summary => {
         if (!summary.match(/\d+/)) {
@@ -90,27 +132,27 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       });
     }
 
-    const customSkills = baseSuggestions.skills[industry as keyof typeof baseSuggestions.skills] || baseSuggestions.skills.technology;
-
-    // Customize based on industry and role
+    // Add role-specific summaries
     if (industry && role) {
-      if (industry === 'technology') {
+      const experienceYears = role === 'entry' ? '1-2' : role === 'mid' ? '3-5' : role === 'senior' ? '5-8' : '10+';
+      
+      if (currentIndustryData) {
         customSummaries.push(
-          `Experienced ${role}-level technology professional with expertise in modern development practices and emerging technologies.`,
-          `Software engineer with ${role === 'entry' ? '1-2' : role === 'mid' ? '3-5' : '5+'} years of experience building scalable applications and leading technical initiatives.`
+          `Experienced ${role}-level ${industry} professional with ${experienceYears} years of expertise in ${currentIndustryData.skills.slice(0, 3).join(', ')}.`
         );
-      } else if (industry === 'healthcare') {
+      } else {
         customSummaries.push(
-          `Dedicated healthcare professional committed to providing exceptional patient care and clinical excellence.`,
-          `${role === 'entry' ? 'Emerging' : 'Experienced'} healthcare specialist with strong clinical skills and patient-centered approach.`
+          `Dynamic ${role}-level professional with ${experienceYears} years of experience delivering exceptional results in ${industry}.`
         );
       }
     }
 
     return {
-      summaries: customSummaries,
+      summaries: customSummaries.slice(0, 3),
       skills: customSkills,
-      achievements: customAchievements
+      achievements: customAchievements,
+      certifications: customCertifications,
+      jobTitles: suggestedJobTitles
     };
   }, [industry, role, improvements]);
 
@@ -142,24 +184,54 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
     });
   };
 
+  const industrySpecificData = industryData[industry as keyof typeof industryData];
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5" />
-          AI Suggestions
+          Smart Suggestions
           {Object.values(improvements).some(Boolean) && (
             <Badge variant="secondary" className="text-xs">Learning</Badge>
           )}
         </CardTitle>
         {(industry || role) && (
-          <div className="flex gap-2">
-            {industry && <Badge variant="secondary">{industry}</Badge>}
+          <div className="flex gap-2 flex-wrap">
+            {industry && <Badge variant="secondary" className="flex items-center gap-1">
+              <Briefcase className="w-3 h-3" />
+              {industry}
+            </Badge>}
             {role && <Badge variant="secondary">{role} level</Badge>}
+            {industrySpecificData && (
+              <Badge variant="outline" className="text-xs">Industry Match</Badge>
+            )}
           </div>
         )}
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Job Titles Suggestions */}
+        {suggestions.jobTitles.length > 0 && (
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-1">
+              <Briefcase className="w-4 h-4" />
+              Suggested Job Titles
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.jobTitles.map((title, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-blue-50 hover:border-blue-300"
+                  onClick={() => copyToClipboard(title)}
+                >
+                  {title}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Summary Suggestions */}
         <div>
           <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-1">
@@ -213,6 +285,25 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
           <p className="text-xs text-gray-500 mt-2">Click to copy skill to clipboard</p>
         </div>
 
+        {/* Certifications */}
+        {suggestions.certifications.length > 0 && (
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3">Relevant Certifications</h4>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.certifications.map((cert, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-green-50"
+                  onClick={() => copyToClipboard(cert)}
+                >
+                  {cert}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Achievement Suggestions */}
         <div>
           <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
@@ -244,12 +335,14 @@ const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
 
         {/* Pro Tips */}
         <div className="border-t pt-4">
-          <h4 className="font-medium text-gray-700 mb-2">💡 Pro Tips</h4>
+          <h4 className="font-medium text-gray-700 mb-2">💡 Industry Tips</h4>
           <ul className="text-xs text-gray-600 space-y-1">
             <li>• Use action verbs to start bullet points (Led, Developed, Achieved)</li>
             <li>• Include specific numbers and metrics when possible</li>
             <li>• Tailor your resume for each job application</li>
-            <li>• Keep descriptions concise but impactful</li>
+            {industrySpecificData && (
+              <li className="text-blue-600">• Focus on {industrySpecificData.skills.slice(0, 2).join(' and ')} for {industry} roles</li>
+            )}
             {improvements.includeMetrics && (
               <li className="text-blue-600">• AI noticed you prefer quantified achievements</li>
             )}
