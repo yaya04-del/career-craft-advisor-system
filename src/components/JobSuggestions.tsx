@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,34 @@ const JobSuggestions: React.FC<JobSuggestionsProps> = ({ resumeData }) => {
   const [location, setLocation] = useState('');
   const [jobSuggestions, setJobSuggestions] = useState<JobSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load API key from localStorage on component mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('openai_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
+
+  // Save API key to localStorage when it changes
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    if (value.trim()) {
+      localStorage.setItem('openai_api_key', value);
+    } else {
+      localStorage.removeItem('openai_api_key');
+    }
+  };
+
+  // Clear saved API key
+  const clearApiKey = () => {
+    setApiKey('');
+    localStorage.removeItem('openai_api_key');
+    toast({
+      title: "API Key Cleared",
+      description: "Your saved API key has been removed.",
+    });
+  };
 
   const generateJobSuggestions = async () => {
     if (!apiKey.trim()) {
@@ -156,17 +184,29 @@ const JobSuggestions: React.FC<JobSuggestionsProps> = ({ resumeData }) => {
       <CardContent className="space-y-4">
         {/* API Key Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            OpenAI API Key
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              OpenAI API Key
+            </label>
+            {apiKey && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearApiKey}
+                className="text-xs text-gray-500 hover:text-red-500"
+              >
+                Clear Saved Key
+              </Button>
+            )}
+          </div>
           <Input
             type="password"
-            placeholder="sk-..."
+            placeholder={apiKey ? "API key saved ✓" : "sk-..."}
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={(e) => handleApiKeyChange(e.target.value)}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Your API key is not stored and only used for this session.
+            {apiKey ? "Your API key is saved locally for this session." : "Your API key will be saved locally for convenience."}
           </p>
         </div>
 
@@ -261,6 +301,7 @@ const JobSuggestions: React.FC<JobSuggestionsProps> = ({ resumeData }) => {
             <li>Be specific about your job preferences for better suggestions</li>
             <li>Include industry, role level, and work environment preferences</li>
             <li>Your resume data is used to match you with relevant opportunities</li>
+            <li>API key is stored locally and never sent to our servers</li>
           </ul>
         </div>
       </CardContent>
