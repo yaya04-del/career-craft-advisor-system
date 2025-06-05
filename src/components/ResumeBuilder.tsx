@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye } from 'lucide-react';
+import { FileText, Eye, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useResumeData } from '@/hooks/useResumeData';
 import TemplateSelector from './TemplateSelector';
 import ResumePreview from './ResumePreview';
 import ATSChecker from './ATSChecker';
@@ -18,56 +21,9 @@ import ExperienceForm from './forms/ExperienceForm';
 import EducationForm from './forms/EducationForm';
 import SkillsForm from './forms/SkillsForm';
 
-interface ResumeData {
-  personalInfo: {
-    fullName: string;
-    email: string;
-    phone: string;
-    location: string;
-    linkedin: string;
-    website: string;
-  };
-  summary: string;
-  experience: Array<{
-    id: string;
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string;
-    current: boolean;
-    description: string;
-  }>;
-  education: Array<{
-    id: string;
-    institution: string;
-    degree: string;
-    field: string;
-    graduationDate: string;
-    gpa?: string;
-  }>;
-  skills: string[];
-  achievements: string[];
-  selectedTemplate: 'modern' | 'classic' | 'minimal';
-}
-
 const ResumeBuilder = () => {
-  const [resumeData, setResumeData] = useState<ResumeData>({
-    personalInfo: {
-      fullName: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin: '',
-      website: ''
-    },
-    summary: '',
-    experience: [],
-    education: [],
-    skills: [],
-    achievements: [],
-    selectedTemplate: 'modern'
-  });
-
+  const { user, signOut } = useAuth();
+  const { resumeData, setResumeData, loading } = useResumeData();
   const [activeTab, setActiveTab] = useState('personal');
   const [currentSkill, setCurrentSkill] = useState('');
   const [currentAchievement, setCurrentAchievement] = useState('');
@@ -76,33 +32,23 @@ const ResumeBuilder = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [feedbackPatterns, setFeedbackPatterns] = useState<any[]>([]);
 
-  // Load data from localStorage on component mount
-  useEffect(() => {
-    const savedData = localStorage.getItem('resumeBuilderData');
-    if (savedData) {
-      setResumeData(JSON.parse(savedData));
-    }
-  }, []);
-
-  // Save data to localStorage whenever resumeData changes
-  useEffect(() => {
-    localStorage.setItem('resumeBuilderData', JSON.stringify(resumeData));
-  }, [resumeData]);
-
-  // Track changes to summary for feedback
-  useEffect(() => {
-    const lastApplied = (window as any).lastAppliedSuggestion;
-    if (lastApplied && lastApplied.type === 'summary' && lastApplied.content !== resumeData.summary) {
-      lastApplied.trackEdit(lastApplied.content, resumeData.summary);
-      delete (window as any).lastAppliedSuggestion;
-    }
-  }, [resumeData.summary]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your resume...</p>
+        </div>
+      </div>
+    );
+  }
 
   const updatePersonalInfo = (field: keyof typeof resumeData.personalInfo, value: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, [field]: value }
-    }));
+    const newData = {
+      ...resumeData,
+      personalInfo: { ...resumeData.personalInfo, [field]: value }
+    };
+    setResumeData(newData);
   };
 
   const addExperience = () => {
@@ -115,26 +61,29 @@ const ResumeBuilder = () => {
       current: false,
       description: ''
     };
-    setResumeData(prev => ({
-      ...prev,
-      experience: [...prev.experience, newExp]
-    }));
+    const newData = {
+      ...resumeData,
+      experience: [...resumeData.experience, newExp]
+    };
+    setResumeData(newData);
   };
 
   const updateExperience = (id: string, field: string, value: any) => {
-    setResumeData(prev => ({
-      ...prev,
-      experience: prev.experience.map(exp => 
+    const newData = {
+      ...resumeData,
+      experience: resumeData.experience.map(exp => 
         exp.id === id ? { ...exp, [field]: value } : exp
       )
-    }));
+    };
+    setResumeData(newData);
   };
 
   const removeExperience = (id: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      experience: prev.experience.filter(exp => exp.id !== id)
-    }));
+    const newData = {
+      ...resumeData,
+      experience: resumeData.experience.filter(exp => exp.id !== id)
+    };
+    setResumeData(newData);
   };
 
   const addEducation = () => {
@@ -146,34 +95,38 @@ const ResumeBuilder = () => {
       graduationDate: '',
       gpa: ''
     };
-    setResumeData(prev => ({
-      ...prev,
-      education: [...prev.education, newEdu]
-    }));
+    const newData = {
+      ...resumeData,
+      education: [...resumeData.education, newEdu]
+    };
+    setResumeData(newData);
   };
 
   const updateEducation = (id: string, field: string, value: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      education: prev.education.map(edu => 
+    const newData = {
+      ...resumeData,
+      education: resumeData.education.map(edu => 
         edu.id === id ? { ...edu, [field]: value } : edu
       )
-    }));
+    };
+    setResumeData(newData);
   };
 
   const removeEducation = (id: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      education: prev.education.filter(edu => edu.id !== id)
-    }));
+    const newData = {
+      ...resumeData,
+      education: resumeData.education.filter(edu => edu.id !== id)
+    };
+    setResumeData(newData);
   };
 
   const addSkill = () => {
     if (currentSkill.trim() && !resumeData.skills.includes(currentSkill.trim())) {
-      setResumeData(prev => ({
-        ...prev,
-        skills: [...prev.skills, currentSkill.trim()]
-      }));
+      const newData = {
+        ...resumeData,
+        skills: [...resumeData.skills, currentSkill.trim()]
+      };
+      setResumeData(newData);
       setCurrentSkill('');
       toast({
         title: "Skill added!",
@@ -183,18 +136,20 @@ const ResumeBuilder = () => {
   };
 
   const removeSkill = (skillToRemove: string) => {
-    setResumeData(prev => ({
-      ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
-    }));
+    const newData = {
+      ...resumeData,
+      skills: resumeData.skills.filter(skill => skill !== skillToRemove)
+    };
+    setResumeData(newData);
   };
 
   const addAchievement = () => {
     if (currentAchievement.trim()) {
-      setResumeData(prev => ({
-        ...prev,
-        achievements: [...prev.achievements, currentAchievement.trim()]
-      }));
+      const newData = {
+        ...resumeData,
+        achievements: [...resumeData.achievements, currentAchievement.trim()]
+      };
+      setResumeData(newData);
       setCurrentAchievement('');
       toast({
         title: "Achievement added!",
@@ -204,10 +159,11 @@ const ResumeBuilder = () => {
   };
 
   const removeAchievement = (index: number) => {
-    setResumeData(prev => ({
-      ...prev,
-      achievements: prev.achievements.filter((_, i) => i !== index)
-    }));
+    const newData = {
+      ...resumeData,
+      achievements: resumeData.achievements.filter((_, i) => i !== index)
+    };
+    setResumeData(newData);
   };
 
   const calculateCompleteness = () => {
@@ -270,7 +226,7 @@ const ResumeBuilder = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Resume Builder</h1>
-              <p className="text-gray-600">Create a professional resume with AI-powered suggestions</p>
+              <p className="text-gray-600">Welcome back, {user?.email}</p>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setPreviewMode(true)}>
@@ -278,6 +234,10 @@ const ResumeBuilder = () => {
                 Preview
               </Button>
               <ExportDropdown resumeData={resumeData} />
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
           
@@ -318,7 +278,7 @@ const ResumeBuilder = () => {
                   summary={resumeData.summary}
                   selectedIndustry={selectedIndustry}
                   selectedRole={selectedRole}
-                  onSummaryChange={(value) => setResumeData(prev => ({ ...prev, summary: value }))}
+                  onSummaryChange={(value) => setResumeData({ ...resumeData, summary: value })}
                   onIndustryChange={setSelectedIndustry}
                   onRoleChange={setSelectedRole}
                 />
@@ -360,7 +320,7 @@ const ResumeBuilder = () => {
               <TabsContent value="template">
                 <TemplateSelector
                   selectedTemplate={resumeData.selectedTemplate}
-                  onTemplateSelect={(template) => setResumeData(prev => ({ ...prev, selectedTemplate: template }))}
+                  onTemplateSelect={(template) => setResumeData({ ...resumeData, selectedTemplate: template })}
                 />
               </TabsContent>
             </Tabs>
@@ -376,7 +336,7 @@ const ResumeBuilder = () => {
               role={selectedRole}
               onSuggestionApply={(type, content) => {
                 if (type === 'summary') {
-                  setResumeData(prev => ({ ...prev, summary: content }));
+                  setResumeData({ ...resumeData, summary: content });
                   toast({
                     title: "Suggestion applied!",
                     description: "Your summary has been updated with AI suggestions.",
