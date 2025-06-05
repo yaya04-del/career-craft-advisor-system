@@ -9,127 +9,13 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      job_suggestions_audit: {
-        Row: {
-          created_at: string | null
-          id: string
-          job_requirements: string
-          location: string | null
-          suggestions_count: number | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          job_requirements: string
-          location?: string | null
-          suggestions_count?: number | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          job_requirements?: string
-          location?: string | null
-          suggestions_count?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "job_suggestions_audit_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string | null
-          email: string
-          full_name: string | null
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          full_name?: string | null
-          id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      resumes: {
-        Row: {
-          achievements: string[] | null
-          created_at: string | null
-          education: Json
-          experience: Json
-          id: string
-          personal_info: Json
-          selected_template: string
-          skills: string[] | null
-          summary: string | null
-          title: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          achievements?: string[] | null
-          created_at?: string | null
-          education?: Json
-          experience?: Json
-          id?: string
-          personal_info?: Json
-          selected_template?: string
-          skills?: string[] | null
-          summary?: string | null
-          title?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          achievements?: string[] | null
-          created_at?: string | null
-          education?: Json
-          experience?: Json
-          id?: string
-          personal_info?: Json
-          selected_template?: string
-          skills?: string[] | null
-          summary?: string | null
-          title?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "resumes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
